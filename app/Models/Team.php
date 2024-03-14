@@ -11,13 +11,13 @@ class Team extends Model
 
     protected $fillable = ['name', 'size'];
 
-    public function add($user)
+    public function add($users)
     {
-        $this->guardAgainstTooManyMembers();
+        $this->guardAgainstTooManyMembers($this->extractNewUsersCount($users));
 
-        $method = $user instanceof User ? 'save' : 'saveMany';
+        $method = $users instanceof User ? 'save' : 'saveMany';
 
-        $this->members()->$method($user);
+        $this->members()->$method($users);
     }
 
     public function members()
@@ -28,6 +28,11 @@ class Team extends Model
     public function count()
     {
         return $this->members()->count();
+    }
+
+    public function maximumSize()
+    {
+        return $this->size;
     }
 
     public function remove($users = null)
@@ -60,11 +65,19 @@ class Team extends Model
     {
         return $this->members()->update(['team_id' => null]);
     }
-    protected function guardAgainstTooManyMembers()
+
+    protected function guardAgainstTooManyMembers($newUserCount): void
     {
-        if ($this->count() >= $this->size)
+        $newTeamCount = $this->count() + $newUserCount;
+
+        if ($newTeamCount >= $this->maximumSize())
         {
-            throw new \Exception();
+            throw new \Exception;
         }
+    }
+
+    protected function extractNewUsersCount($users)
+    {
+        return  $users instanceof User ? 1 : count($users);
     }
 }
